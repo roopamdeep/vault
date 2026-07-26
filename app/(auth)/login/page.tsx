@@ -20,7 +20,9 @@ export default function LoginPage() {
     try {
       const res = await axios.post("/api/auth/login", { email, password });
       setUser(res.data.user, res.data.accessToken);
-      router.push("/dashboard");
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 100);
     } catch (err: any) {
       setError(err.response?.data?.error || "Something went wrong");
     } finally {
