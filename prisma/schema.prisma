@@ -13,11 +13,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  email            String   @unique
+  password         String
+  name             String
+  plaidAccessToken String?
+  createdAt        DateTime @default(now())
 
   accounts     Account[]
   transactions Transaction[]
@@ -42,6 +43,7 @@ model Transaction {
   id         String   @id @default(cuid())
   accountId  String
   userId     String
+  plaidTransactionId String?  @unique
   amount     Float
   category   String?
   merchant   String?
