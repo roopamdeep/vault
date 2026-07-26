@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+
+  accounts     Account[]
+  transactions Transaction[]
+  budgets      Budget[]
+  goals        SavingsGoal[]
+}
+
+model Account {
+  id            String   @id @default(cuid())
+  userId        String
+  plaidAccountId String  @unique
+  name          String
+  type          String
+  balance       Float
+  createdAt     DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  accountId  String
+  userId     String
+  amount     Float
+  category   String?
+  merchant   String?
+  date       DateTime
+  isAnomaly  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String
+  limit     Float
+  month     Int
+  year      Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model SavingsGoal {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
