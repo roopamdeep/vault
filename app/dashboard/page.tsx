@@ -13,7 +13,10 @@ export default function DashboardPage() {
   const [syncing, setSyncing] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [summary, setSummary] = useState({
+    totalBalance: 0,
+    monthlySpending: 0,
+  });
   useEffect(() => {
     if (!user) {
       router.push("/login");
@@ -21,6 +24,7 @@ export default function DashboardPage() {
     }
     getLinkToken();
     fetchTransactions();
+    fetchSummary();
   }, [user]);
 
   const getLinkToken = async () => {
@@ -45,6 +49,16 @@ export default function DashboardPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+  const fetchSummary = async () => {
+    try {
+      const res = await axios.get("/api/dashboard/summary", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setSummary(res.data);
+    } catch (err) {
+      console.error(err);
     }
   };
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
@@ -99,15 +113,17 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
             <p className="text-zinc-500 text-sm mb-1">Total Balance</p>
-            <p className="text-3xl font-bold text-white">$0.00</p>
-            <p className="text-zinc-600 text-xs mt-1">
-              Connect a bank to get started
+            <p className="text-3xl font-bold text-white">
+              ${summary.totalBalance.toFixed(2)}
             </p>
+            <p className="text-zinc-600 text-xs mt-1">Across all accounts</p>
           </div>
           <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
             <p className="text-zinc-500 text-sm mb-1">Monthly Spending</p>
-            <p className="text-3xl font-bold text-white">$0.00</p>
-            <p className="text-zinc-600 text-xs mt-1">No transactions yet</p>
+            <p className="text-3xl font-bold text-white">
+              ${summary.monthlySpending.toFixed(2)}
+            </p>
+            <p className="text-zinc-600 text-xs mt-1">Spent this month</p>
           </div>
           <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
             <p className="text-zinc-500 text-sm mb-1">Monthly Budget</p>
