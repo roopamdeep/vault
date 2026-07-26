@@ -199,6 +199,19 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           <span className="text-zinc-400 text-sm">Welcome, {user.name}</span>
           <button
+            onClick={async () => {
+              const res = await api.post(
+                "/api/stripe/create-checkout",
+                {},
+                { headers: { Authorization: `Bearer ${accessToken}` } },
+              );
+              window.location.href = res.data.url;
+            }}
+            className="text-sm bg-violet-500 hover:bg-violet-400 text-white font-semibold rounded-xl px-4 py-1.5 transition-colors"
+          >
+            ⭐ Upgrade
+          </button>
+          <button
             onClick={runAnalysis}
             disabled={analyzing}
             className="text-sm bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold rounded-xl px-4 py-1.5 transition-colors"
