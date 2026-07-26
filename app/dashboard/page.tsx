@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     setHydrated(true);
@@ -42,7 +43,7 @@ export default function DashboardPage() {
       return;
     }
     getLinkToken();
-    fetchTransactions();
+    fetchTransactions("");
     fetchSummary();
     fetchSpendingData();
     fetchBudgets();
@@ -61,9 +62,9 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (searchTerm = "") => {
     try {
-      const res = await api.get("/api/transactions", {
+      const res = await api.get(`/api/transactions?search=${searchTerm}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setTransactions(res.data.transactions);
@@ -134,7 +135,7 @@ export default function DashboardPage() {
         { headers: { Authorization: `Bearer ${accessToken}` } },
       );
       setAnomalies(res.data.anomalies);
-      fetchTransactions();
+      fetchTransactions("");
       fetchSpendingData();
       alert(`Analysis complete! Found ${res.data.anomalies.length} anomalies.`);
     } catch (err) {
@@ -178,7 +179,7 @@ export default function DashboardPage() {
           { headers: { Authorization: `Bearer ${accessToken}` } },
         );
         alert(`Synced ${res.data.count} transactions!`);
-        fetchTransactions();
+        fetchTransactions("");
       } catch (err) {
         console.error(err);
       } finally {
@@ -335,6 +336,18 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-white mb-4">
             Recent Transactions
           </h2>
+          <div className="mb-4">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                fetchTransactions(e.target.value);
+              }}
+              placeholder="Search transactions..."
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 text-sm"
+            />
+          </div>
           {loading ? (
             <div className="flex justify-center py-12">
               <p className="text-zinc-500 text-sm">Loading transactions...</p>
