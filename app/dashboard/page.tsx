@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [hydrated, setHydrated] = useState(false);
   const [anomalies, setAnomalies] = useState<any[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [forecast, setForecast] = useState<any>(null);
 
   useEffect(() => {
     setHydrated(true);
@@ -98,6 +99,24 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setBudgets(res.data.budgets);
+      const totalBudget = res.data.budgets.reduce(
+        (sum: number, b: any) => sum + b.limit,
+        0,
+      );
+      if (totalBudget > 0) fetchForecast(totalBudget);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchForecast = async (totalBudget: number) => {
+    try {
+      const res = await api.post(
+        "/api/ml/forecast",
+        { budgetLimit: totalBudget },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      setForecast(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -200,6 +219,23 @@ export default function DashboardPage() {
             <p className="text-zinc-600 text-xs mt-1">Total budget set</p>
           </div>
         </div>
+
+        {forecast && (
+          <div
+            className={`border rounded-2xl p-6 mb-8 ${forecast.on_track ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20"}`}
+          >
+            <h2
+              className={`text-lg font-semibold mb-2 ${forecast.on_track ? "text-emerald-400" : "text-red-400"}`}
+            >
+              {forecast.on_track ? "✅ Budget Forecast" : "⚠️ Budget Forecast"}
+            </h2>
+            <p
+              className={`text-sm ${forecast.on_track ? "text-emerald-300" : "text-red-300"}`}
+            >
+              {forecast.message}
+            </p>
+          </div>
+        )}
 
         <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6 mb-8">
           <h2 className="text-lg font-semibold text-white mb-4">
