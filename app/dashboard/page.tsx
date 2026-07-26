@@ -1,10 +1,10 @@
 "use client";
-
+import SpendingChart from "@/components/SpendingChart";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useCallback, useState } from "react";
 import { usePlaidLink, PlaidLinkOnSuccess } from "react-plaid-link";
-import axios from "axios";
+import api from "@/lib/axios";
 
 export default function DashboardPage() {
   const { user, accessToken } = useAuthStore();
@@ -17,7 +17,17 @@ export default function DashboardPage() {
     totalBalance: 0,
     monthlySpending: 0,
   });
+  const [spendingData, setSpendingData] = useState<
+    { name: string; value: number }[]
+  >([]);
+  const [hydrated, setHydrated] = useState(false);
+
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     if (!user) {
       router.push("/login");
       return;
@@ -25,11 +35,12 @@ export default function DashboardPage() {
     getLinkToken();
     fetchTransactions();
     fetchSummary();
-  }, [user]);
+    fetchSpendingData();
+  }, [hydrated, user]);
 
   const getLinkToken = async () => {
     try {
-      const res = await axios.post(
+      const res = await api.post(
         "/api/plaid/create-link-token",
         {},
         { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -41,7 +52,7 @@ export default function DashboardPage() {
   };
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get("/api/transactions", {
+      const res = await api.get("/api/transactions", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setTransactions(res.data.transactions);
@@ -53,10 +64,20 @@ export default function DashboardPage() {
   };
   const fetchSummary = async () => {
     try {
-      const res = await axios.get("/api/dashboard/summary", {
+      const res = await api.get("/api/dashboard/summary", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       setSummary(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const fetchSpendingData = async () => {
+    try {
+      const res = await api.get("/api/dashboard/spending-by-category", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setSpendingData(res.data.data);
     } catch (err) {
       console.error(err);
     }
@@ -65,12 +86,12 @@ export default function DashboardPage() {
     async (public_token, metadata) => {
       try {
         setSyncing(true);
-        await axios.post(
+        await api.post(
           "/api/plaid/exchange-token",
           { public_token },
           { headers: { Authorization: `Bearer ${accessToken}` } },
         );
-        const res = await axios.post(
+        const res = await api.post(
           "/api/plaid/sync-transactions",
           {},
           { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -130,6 +151,12 @@ export default function DashboardPage() {
             <p className="text-3xl font-bold text-emerald-400">$0.00</p>
             <p className="text-zinc-600 text-xs mt-1">Set a budget to track</p>
           </div>
+        </div>
+        <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6 mb-8">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            Spending by Category
+          </h2>
+          <SpendingChart data={spendingData} />
         </div>
         <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-white mb-4">

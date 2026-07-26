@@ -24,7 +24,7 @@ export default function RegisterPage() {
         email,
         password,
       });
-      setUser(res.data.user, res.data.accessToken);
+      setUser(res.data.user, res.data.accessToken, res.data.refreshToken);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.error || "Something went wrong");
