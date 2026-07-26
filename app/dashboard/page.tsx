@@ -24,6 +24,8 @@ export default function DashboardPage() {
   >([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [anomalies, setAnomalies] = useState<any[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     setHydrated(true);
@@ -101,6 +103,25 @@ export default function DashboardPage() {
     }
   };
 
+  const runAnalysis = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await api.post(
+        "/api/ml/analyze",
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      setAnomalies(res.data.anomalies);
+      fetchTransactions();
+      fetchSpendingData();
+      alert(`Analysis complete! Found ${res.data.anomalies.length} anomalies.`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (public_token) => {
       try {
@@ -126,10 +147,7 @@ export default function DashboardPage() {
     [accessToken],
   );
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken ?? "",
-    onSuccess,
-  });
+  const { open, ready } = usePlaidLink({ token: linkToken ?? "", onSuccess });
 
   if (!user) return null;
 
@@ -139,6 +157,13 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold">🔐 Vault</h1>
         <div className="flex items-center gap-4">
           <span className="text-zinc-400 text-sm">Welcome, {user.name}</span>
+          <button
+            onClick={runAnalysis}
+            disabled={analyzing}
+            className="text-sm bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold rounded-xl px-4 py-1.5 transition-colors"
+          >
+            {analyzing ? "Analyzing..." : "Run Analysis"}
+          </button>
           <button
             onClick={() => {
               useAuthStore.getState().logout();
@@ -189,6 +214,21 @@ export default function DashboardPage() {
           </h2>
           <BudgetManager budgets={budgets} onBudgetSaved={fetchBudgets} />
         </div>
+
+        {anomalies.length > 0 && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 mb-8">
+            <h2 className="text-lg font-semibold text-red-400 mb-4">
+              ⚠️ Anomalies Detected
+            </h2>
+            <div className="space-y-2">
+              {anomalies.map((anomaly, i) => (
+                <div key={i} className="text-red-300 text-sm">
+                  • {anomaly.reason}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-white mb-4">
