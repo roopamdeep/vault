@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -42,9 +43,10 @@ export default function DashboardPage() {
       setTransactions(res.data.transactions);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
-
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (public_token, metadata) => {
       try {
@@ -70,7 +72,7 @@ export default function DashboardPage() {
     [accessToken],
   );
   const { open, ready } = usePlaidLink({
-    token: linkToken!,
+    token: linkToken ?? "",
     onSuccess,
   });
   if (!user) return null;
@@ -117,7 +119,11 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-white mb-4">
             Recent Transactions
           </h2>
-          {transactions.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <p className="text-zinc-500 text-sm">Loading transactions...</p>
+            </div>
+          ) : transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-zinc-500 text-sm">No transactions yet</p>
               <p className="text-zinc-600 text-xs mt-1">

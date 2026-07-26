@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface User {
   id: string;
@@ -15,11 +16,18 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  isLoading: false,
-  setUser: (user, accessToken) => set({ user, accessToken }),
-  logout: () => set({ user: null, accessToken: null }),
-  setLoading: (isLoading) => set({ isLoading }),
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      accessToken: null,
+      isLoading: false,
+      setUser: (user, accessToken) => set({ user, accessToken }),
+      logout: () => set({ user: null, accessToken: null }),
+      setLoading: (isLoading) => set({ isLoading }),
+    }),
+    {
+      name: "vault-auth",
+    },
+  ),
+);
