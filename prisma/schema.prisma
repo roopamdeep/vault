@@ -65,6 +65,8 @@ model Budget {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, category, month, year])
 }
 
 model SavingsGoal {

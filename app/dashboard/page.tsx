@@ -1,10 +1,12 @@
 "use client";
-import SpendingChart from "@/components/SpendingChart";
-import { useAuthStore } from "@/store/authStore";
+
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useCallback, useState } from "react";
+import { useAuthStore } from "@/store/authStore";
 import { usePlaidLink, PlaidLinkOnSuccess } from "react-plaid-link";
 import api from "@/lib/axios";
+import SpendingChart from "@/components/SpendingChart";
+import BudgetManager from "@/components/BudgetManager";
 
 export default function DashboardPage() {
   const { user, accessToken } = useAuthStore();
@@ -20,6 +22,7 @@ export default function DashboardPage() {
   const [spendingData, setSpendingData] = useState<
     { name: string; value: number }[]
   >([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function DashboardPage() {
     fetchTransactions();
     fetchSummary();
     fetchSpendingData();
+    fetchBudgets();
   }, [hydrated, user]);
 
   const getLinkToken = async () => {
@@ -50,6 +54,7 @@ export default function DashboardPage() {
       console.error("Failed to get link token", err);
     }
   };
+
   const fetchTransactions = async () => {
     try {
       const res = await api.get("/api/transactions", {
@@ -62,6 +67,7 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
   const fetchSummary = async () => {
     try {
       const res = await api.get("/api/dashboard/summary", {
@@ -72,6 +78,7 @@ export default function DashboardPage() {
       console.error(err);
     }
   };
+
   const fetchSpendingData = async () => {
     try {
       const res = await api.get("/api/dashboard/spending-by-category", {
@@ -82,8 +89,20 @@ export default function DashboardPage() {
       console.error(err);
     }
   };
+
+  const fetchBudgets = async () => {
+    try {
+      const res = await api.get("/api/budgets", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setBudgets(res.data.budgets);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
-    async (public_token, metadata) => {
+    async (public_token) => {
       try {
         setSyncing(true);
         await api.post(
@@ -106,10 +125,12 @@ export default function DashboardPage() {
     },
     [accessToken],
   );
+
   const { open, ready } = usePlaidLink({
     token: linkToken ?? "",
     onSuccess,
   });
+
   if (!user) return null;
 
   return (
@@ -148,16 +169,27 @@ export default function DashboardPage() {
           </div>
           <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
             <p className="text-zinc-500 text-sm mb-1">Monthly Budget</p>
-            <p className="text-3xl font-bold text-emerald-400">$0.00</p>
-            <p className="text-zinc-600 text-xs mt-1">Set a budget to track</p>
+            <p className="text-3xl font-bold text-emerald-400">
+              ${budgets.reduce((sum, b) => sum + b.limit, 0).toFixed(2)}
+            </p>
+            <p className="text-zinc-600 text-xs mt-1">Total budget set</p>
           </div>
         </div>
+
         <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6 mb-8">
           <h2 className="text-lg font-semibold text-white mb-4">
             Spending by Category
           </h2>
           <SpendingChart data={spendingData} />
         </div>
+
+        <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6 mb-8">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            Monthly Budgets
+          </h2>
+          <BudgetManager budgets={budgets} onBudgetSaved={fetchBudgets} />
+        </div>
+
         <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-white mb-4">
             Recent Transactions
