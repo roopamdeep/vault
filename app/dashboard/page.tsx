@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [anomalies, setAnomalies] = useState<any[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [forecast, setForecast] = useState<any>(null);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     setHydrated(true);
@@ -138,6 +141,25 @@ export default function DashboardPage() {
       console.error(err);
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const askAI = async () => {
+    if (!aiQuestion.trim()) return;
+    setAiLoading(true);
+    setAiAnswer("");
+    try {
+      const res = await api.post(
+        "/api/ai/insights",
+        { question: aiQuestion },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      setAiAnswer(res.data.answer);
+    } catch (err) {
+      console.error(err);
+      setAiAnswer("Sorry, AI insights are unavailable right now.");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -265,6 +287,36 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6 mb-8">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            🧠 AI Financial Insights
+          </h2>
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              value={aiQuestion}
+              onChange={(e) => setAiQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && askAI()}
+              placeholder="Ask anything... e.g. Why did I overspend this month?"
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 text-sm"
+            />
+            <button
+              onClick={askAI}
+              disabled={aiLoading}
+              className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold rounded-xl px-5 py-3 text-sm transition-colors"
+            >
+              {aiLoading ? "Thinking..." : "Ask"}
+            </button>
+          </div>
+          {aiAnswer && (
+            <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4">
+              <p className="text-zinc-300 text-sm leading-relaxed">
+                {aiAnswer}
+              </p>
+            </div>
+          )}
+        </div>
 
         <div className="bg-[#111111] border border-zinc-800 rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-white mb-4">
